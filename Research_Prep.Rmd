@@ -1,0 +1,124 @@
+---
+title: "Research Preparation"
+author: "Michiru Nozawa"
+format: html
+editor: visual
+---
+
+### Main Question
+
+**How COVID-19 affects the centrality in ASEAN+3?**
+
+We are goign to use 2018 data as the evidence of the ASEAN+3 network before COVID-19 and 2019-2021 data as the evidence of of their network after COVID-19.
+
+Use modularity to measure the tie and detect the community! Also, look at the polarization in ASEAN+3 network.
+
+### Load Packages
+
+```{r, message = FALSE}
+library(rio)
+library(igraph)
+library(tidyverse)
+library(dplyr)
+library(statnet)
+```
+
+### Import data
+
+```{r, message = FALSE, warning=FALSE, echo=FALSE}
+# 2018 data as BEFORE COVID
+df2018 <- import("BACI_HS17_Y2018_V202301.csv")
+
+# 2019-2021 data as AFTER COVID
+df2019 <- import("BACI_HS17_Y2019_V202301.csv")
+df2020 <- import("BACI_HS17_Y2020_V202301.csv")
+df2021 <- import("BACI_HS17_Y2021_V202301.csv")
+```
+
+We would like to focus on the trading of ASEAN+3, first we are going to filter the countries to clean our data.
+
+Right now, 13 countries are the part of ASEAN+3.
+
+-   Indonesia 360
+
+-   Malaysia 458
+
+-   Philippine 608
+
+-   Singapore 702
+
+-   Thailand 764
+
+-   Brunei 96
+
+-   Vietnam 704
+
+-   Laos 418
+
+-   Myanmar 104
+
+-   Cambodia 116
+
+-   China 156
+
+-   Korea 410
+
+-   Japan 392
+
+### Variables in data
+
+-   t: Year
+-   i: Exporter
+    -   Limited to ASEAN+3 members which are listed above
+-   j: Importer
+    -   Also limited to ASEAN+3 members
+-   k: Product category
+    -   We might want to remove this variable if we do not care about product category in our research
+-   v: Value of the trade flow
+    -   How did they measure the value of the trade flow?
+
+    -   If we remove product category, we can find the aggregate of the value of the trade flow
+
+    -   Every value is recorded
+-   q: Quantity in metric tons (1 MT = 1000 kg)
+    -   Remove product category and find the aggregate quantity?
+
+    -   Adding the quantity of every product might cause the issue since one heavy product can have same quantity as 100 light products.
+
+    -   Some missing values -- how should we handle them? Keep them as NA or change to 0?
+
+```{r}
+# question: how do we convert this data into network data? 
+APT_2018 <- df2018[, -c(4, 6)] %>%
+  filter(i %in% c(360, 458, 608, 702, 764, 96, 704, 418, 104, 116, 156, 410, 392)) %>%
+  filter(j %in% c(360, 458, 608, 702, 764, 96, 704, 418, 104, 116, 156, 410, 392))
+
+
+APT_2018_new <- APT_2018 %>% 
+  group_by(i, j) %>%
+  summarise(total_value_trade_flow = sum(v))
+  
+```
+
+```{r cleaning data}
+df2018 = subset(df2018, select = c(t:j, v:q))
+
+df2018_trade_df <- df2018 %>%
+  group_by(i, j) %>%
+  summarise(total_trade_value = sum(v)) %>%
+  filter(i %in% c(360, 458, 608, 702, 764, 96, 704, 418, 104, 116, 156, 410, 392)) %>%
+  filter(j %in% c(360, 458, 608, 702, 764, 96, 704, 418, 104, 116, 156, 410, 392))
+```
+
+```{r data conversion}
+# convert data frame into network object
+APT_2018_net <- as.network(df2018_trade_df, mode = c("directed"))
+```
+
+```{r visualization}
+set.seed(1556)
+plot(APT_2018_net, label = network.vertex.names(APT_2018_net))
+title(main="ASEAN+3 Network in 2018")
+```
+
+TO-DO: - Git hub - Add country name to the data frame - Find the weighted ties - Create visualization for every year and find the visualization format (4) - Create the aggregated visualization (1) - Use modularity and centrality to identify the network's central actor as well as the communities
